@@ -9,7 +9,7 @@ type Task = {
   date: string;
   time: string | null;
   done: boolean;
-  completedAt: string | null;
+  completedAt?: string | Date | null;
 };
 type Checkin = { id: string; date: string };
 type Challenge = {
@@ -17,7 +17,7 @@ type Challenge = {
   title: string;
   duration: number;
   startDate: string;
-  createdAt: string;
+  createdAt?: string | Date;
   checkins: Checkin[];
 };
 type UserRow = { id: string; theme: string; mood: string; xp: number; badges: string[] };
@@ -398,7 +398,10 @@ export default function DashboardClient({
   const pct = allDayTasks.length ? Math.round((doneCount / allDayTasks.length) * 100) : 0;
 
   const sortedChallenges = useMemo(
-    () => [...challenges].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    () =>
+      [...challenges].sort((a, b) =>
+        new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+      ),
     [challenges]
   );
 
