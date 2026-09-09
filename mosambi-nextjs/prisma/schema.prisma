@@ -1,0 +1,72 @@
+// Prisma schema — targets Neon (serverless Postgres)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Neon: use a pooled connection for the app, and add DIRECT_URL for migrations if needed
+}
+
+model User {
+  id        String   @id            // Clerk user id (e.g. "user_...")
+  email     String?
+  theme     String   @default("light")
+  mood      String   @default("default")
+  xp        Int      @default(0)
+  badges    String[] @default([])
+  createdAt DateTime @default(now())
+
+  tasks      Task[]
+  challenges Challenge[]
+  moodImages MoodImage[]
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  type        String    // "task" | "reminder"
+  date        String    // YYYY-MM-DD
+  time        String?   // HH:MM
+  done        Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, date])
+}
+
+model Challenge {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  duration  Int      // total days: 7 / 21 / 45 / 75 / 100 / 120 / custom
+  startDate String   // YYYY-MM-DD
+  createdAt DateTime @default(now())
+
+  checkins ChallengeCheckin[]
+
+  @@index([userId])
+}
+
+model ChallengeCheckin {
+  id          String    @id @default(cuid())
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  date        String    // YYYY-MM-DD
+
+  @@unique([challengeId, date])
+}
+
+model MoodImage {
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mood    String // "happy" | "calm" | "focused" | "energetic"
+  dataUrl String @db.Text // base64 image, compressed client-side before upload
+
+  @@unique([userId, mood])
+}
